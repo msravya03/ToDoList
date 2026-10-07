@@ -1,14 +1,24 @@
-// Attractive To-Do List App JS
+// Attractive To-Do List App JS with Task Editing, Due Dates, Search/Filtering & ML Categorization
 import {
   renderTodos,
   addTodo,
   toggleTodo,
   deleteTodo,
+  startEditingTodo,
+  cancelEditingTodo,
+  saveEditedTodo,
+  setSearchFilter,
+  setStatusFilter,
+  setCategoryFilter,
+  setPriorityFilter,
+  setSortBy,
+  resetAllFilters,
+  updateLiveAiPreview,
   showLoginForm,
   showApp,
 } from "./ui.js";
-import { getTodos, saveTodos } from "./todoService.js";
-import { isLoggedIn, getCurrentUser, logout, login, register } from "./auth.js";
+import { getTodos } from "./todoService.js";
+import { isLoggedIn, logout, login, register } from "./auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   initializeApp();
@@ -16,91 +26,221 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initializeApp() {
   if (isLoggedIn()) {
-    showApp();//show the main todo app
-    renderTodos(getTodos());//get saved todos and draw them on screen 
-    setupTodoEvents();//call function to setup event listener for todo actions(add,toggle,delete)
-    setupLogoutEvent();//logout button
+    showApp();
+    renderTodos(getTodos());
+    setupTodoEvents();
+    setupFilterAndSearchEvents();
+    setupLogoutEvent();
   } else {
-    showLoginForm();//show login
-    setupAuthEvents();//attach event listener to login/register button and forms
+    showLoginForm();
+    setupAuthEvents();
   }
 }
 
+/**
+ * Event listeners for task creation, editing, toggling, and deletion.
+ */
 function setupTodoEvents() {
-  document.getElementById("todo-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const input = document.getElementById("todo-input");//get i/p and store in var 
-    if (input.value.trim()) {//check if not empty 
-      addTodo(input.value.trim());//add todo function call
-      input.value = "";//clear to take next i/p
-    }
-  });
+  const todoForm = document.getElementById("todo-form");
+  const todoInput = document.getElementById("todo-input");
+  const todoDueDate = document.getElementById("todo-due-date");
+  const todoList = document.getElementById("todo-list");
 
-  document.getElementById("todo-list").addEventListener("click", function (e) {
-    if (e.target.classList.contains("toggle")) {
-      toggleTodo(e.target.dataset.id);
-    } else if (e.target.classList.contains("delete")) {
-      deleteTodo(e.target.dataset.id);
-    }
-  });
+  // Add task form submission
+  if (todoForm) {
+    todoForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const text = todoInput ? todoInput.value.trim() : "";
+      const dueDate = todoDueDate ? todoDueDate.value : null;
+
+      if (text) {
+        addTodo(text, dueDate);
+        if (todoInput) todoInput.value = "";
+        if (todoDueDate) todoDueDate.value = "";
+        updateLiveAiPreview(""); // Hide AI prediction preview
+      }
+    });
+  }
+
+  // Live real-time ML prediction preview as user types
+  if (todoInput) {
+    todoInput.addEventListener("input", function (e) {
+      updateLiveAiPreview(e.target.value);
+    });
+  }
+
+  // Event delegation on todo list for toggling, deleting, and editing
+  if (todoList) {
+    // Click events
+    todoList.addEventListener("click", function (e) {
+      const target = e.target;
+
+      // Toggle completed
+      if (target.classList.contains("toggle") || target.closest(".toggle")) {
+        const id = target.dataset.id || target.closest(".toggle").dataset.id;
+        if (id) toggleTodo(id);
+        return;
+      }
+
+      // Delete task
+      if (target.classList.contains("delete") || target.closest(".delete")) {
+        const id = target.dataset.id || target.closest(".delete").dataset.id;
+        if (id) deleteTodo(id);
+        return;
+      }
+
+      // Start editing
+      if (target.classList.contains("edit") || target.closest(".edit")) {
+        const id = target.dataset.id || target.closest(".edit").dataset.id;
+        if (id) startEditingTodo(id);
+        return;
+      }
+
+      // Cancel inline editing
+      if (target.classList.contains("cancel-edit-btn")) {
+        cancelEditingTodo();
+        return;
+      }
+    });
+
+    // Submit handler for inline edit forms
+    todoList.addEventListener("submit", function (e) {
+      const editForm = e.target.closest(".todo-inline-edit-form");
+      if (!editForm) return;
+
+      e.preventDefault();
+      const id = editForm.dataset.id;
+      const textInput = editForm.querySelector(".edit-text-input");
+      const dateInput = editForm.querySelector(".edit-date-input");
+      const catSelect = editForm.querySelector(".edit-category-select");
+      const prioSelect = editForm.querySelector(".edit-priority-select");
+
+      const newText = textInput ? textInput.value : "";
+      const newDueDate = dateInput ? dateInput.value : null;
+      const newCategory = catSelect ? catSelect.value : "General";
+      const newPriority = prioSelect ? prioSelect.value : "Low";
+
+      saveEditedTodo(id, newText, newDueDate, newCategory, newPriority);
+    });
+
+    // Keyboard navigation: Escape key cancels editing
+    todoList.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        cancelEditingTodo();
+      }
+    });
+  }
+}
+
+/**
+ * Event listeners for search, filter dropdowns, and sorting.
+ */
+function setupFilterAndSearchEvents() {
+  const searchInput = document.getElementById("todo-search");
+  const clearSearchBtn = document.getElementById("search-clear-btn");
+  const filterStatus = document.getElementById("filter-status");
+  const filterCategory = document.getElementById("filter-category");
+  const filterPriority = document.getElementById("filter-priority");
+  const sortBy = document.getElementById("sort-by");
+  const resetFiltersBtn = document.getElementById("reset-filters-btn");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", function (e) {
+      setSearchFilter(e.target.value);
+    });
+  }
+
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener("click", function () {
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.focus();
+      }
+      setSearchFilter("");
+    });
+  }
+
+  if (filterStatus) {
+    filterStatus.addEventListener("change", function (e) {
+      setStatusFilter(e.target.value);
+    });
+  }
+
+  if (filterCategory) {
+    filterCategory.addEventListener("change", function (e) {
+      setCategoryFilter(e.target.value);
+    });
+  }
+
+  if (filterPriority) {
+    filterPriority.addEventListener("change", function (e) {
+      setPriorityFilter(e.target.value);
+    });
+  }
+
+  if (sortBy) {
+    sortBy.addEventListener("change", function (e) {
+      setSortBy(e.target.value);
+    });
+  }
+
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener("click", function () {
+      resetAllFilters();
+    });
+  }
 }
 
 function setupAuthEvents() {
   document.getElementById("login-form").addEventListener("submit", handleLogin);
-  document
-    .getElementById("register-form")
-    .addEventListener("submit", handleRegister);//register form submit-run handleregister
-  document
-    .getElementById("show-register")
-    .addEventListener("click", showRegisterForm);//button to show register form
-  document
-    .getElementById("show-login")
-    .addEventListener("click", showLoginFormOnly);//button to show login form
+  document.getElementById("register-form").addEventListener("submit", handleRegister);
+  document.getElementById("show-register").addEventListener("click", showRegisterForm);
+  document.getElementById("show-login").addEventListener("click", showLoginFormOnly);
 }
 
 function setupLogoutEvent() {
-  document.getElementById("logout-btn").addEventListener("click", handleLogout);//When the element with id logout-btn is clicked, call handleLogout()
-}
-
-function handleLogin(e) {//Define the function that runs when login form is submitted. It gets the event e.
-  e.preventDefault();//Prevent page reload on form submit so JS can handle it.
-  const username = document.getElementById("login-username").value;
-  const password = document.getElementById("login-password").value;
-
-  if (login(username, password)) {//Call login(...) (from auth.js). If it returns true, the login worked.
-    initializeApp();//Re-run initializeApp() to show the app now that the user is logged in.
-  } else {
-    document.getElementById("login-error").textContent =
-      "Invalid username or password";
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", handleLogout);
   }
 }
 
-function handleRegister(e) {//Define function to handle register form submit.
-  e.preventDefault();//Stop default form submit behavior (no page reload).
+function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById("login-username").value;
+  const password = document.getElementById("login-password").value;
+
+  if (login(username, password)) {
+    initializeApp();
+  } else {
+    document.getElementById("login-error").textContent = "Invalid username or password";
+  }
+}
+
+function handleRegister(e) {
+  e.preventDefault();
   const username = document.getElementById("register-username").value;
   const password = document.getElementById("register-password").value;
 
   if (register(username, password)) {
     login(username, password);
-    initializeApp();//Show the main app now that registration/log-in succeeded.
+    initializeApp();
   } else {
-    document.getElementById("register-error").textContent =
-      "Username already exists";
+    document.getElementById("register-error").textContent = "Username already exists";
   }
 }
 
-function handleLogout() {//Define the function that runs when the user clicks logout.
+function handleLogout() {
   logout();
-  initializeApp();//Re-run initialization to show the login screen instead of the app.
+  initializeApp();
 }
 
 function showRegisterForm() {
-  document.getElementById("login-container").style.display = "none";//Hide the login container by setting its CSS display to none.
-  document.getElementById("register-container").style.display = "block";//Show the register container by making it visible (block
+  document.getElementById("login-container").style.display = "none";
+  document.getElementById("register-container").style.display = "block";
 }
 
 function showLoginFormOnly() {
-  document.getElementById("register-container").style.display = "none";//Hide the register container.
-  document.getElementById("login-container").style.display = "block";//Show the login container.
-  
+  document.getElementById("register-container").style.display = "none";
+  document.getElementById("login-container").style.display = "block";
 }

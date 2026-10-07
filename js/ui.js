@@ -60,15 +60,15 @@ function getDueDateBadgeInfo(dueDateStr, isCompleted) {
   const formatted = formatDueDateDisplay(dueDateStr);
 
   if (isCompleted) {
-    return { label: `📅 Due: ${formatted}`, statusClass: "due-completed" };
+    return { label: `Due ${formatted}`, statusClass: "due-completed" };
   }
   if (dueDateStr < today) {
-    return { label: `⚠️ Overdue (${formatted})`, statusClass: "due-overdue" };
+    return { label: `Overdue (${formatted})`, statusClass: "due-overdue" };
   }
   if (dueDateStr === today) {
-    return { label: `⏰ Due Today`, statusClass: "due-today" };
+    return { label: `Due today`, statusClass: "due-today" };
   }
-  return { label: `📅 Due: ${formatted}`, statusClass: "due-upcoming" };
+  return { label: `Due ${formatted}`, statusClass: "due-upcoming" };
 }
 
 /**
@@ -289,15 +289,15 @@ function renderTodoItemHtml(todo) {
       </div>
 
       <div class="todo-meta-tags">
-        <span class="category-badge ${categoryClass}" title="ML Predicted Category (${confidence}% confidence)">
-          🏷️ ${categoryName} <span class="badge-confidence">${confidence}%</span>
+        <span class="category-badge ${categoryClass}">
+          ${categoryName}
         </span>
-        <span class="priority-badge ${priorityClass}" title="Priority: ${priorityName}">
-          ⚡ ${priorityName}
+        <span class="priority-badge ${priorityClass}">
+          ${priorityName}
         </span>
         ${
           dueInfo
-            ? `<span class="due-badge ${dueInfo.statusClass}" title="Due Date">
+            ? `<span class="due-badge ${dueInfo.statusClass}">
                 ${dueInfo.label}
               </span>`
             : ""
@@ -307,15 +307,15 @@ function renderTodoItemHtml(todo) {
 
     <div class="todo-actions">
       <button class="action-btn edit-btn edit" data-id="${todo.id}" title="Edit task">
-        ✏️ Edit
+        Edit
       </button>
       <button class="action-btn toggle-btn toggle" data-id="${todo.id}" title="${
         todo.completed ? "Mark as active" : "Mark as completed"
       }">
-        ${todo.completed ? "Undo" : "Done"}
+        ${todo.completed ? "Undo" : "Complete"}
       </button>
       <button class="action-btn delete-btn delete" data-id="${todo.id}" title="Delete task">
-        🗑️
+        Delete
       </button>
     </div>
   `;
@@ -387,7 +387,7 @@ function renderEditFormHtml(todo) {
       </div>
 
       <div class="edit-buttons-row">
-        <button type="submit" class="save-edit-btn">💾 Save Changes</button>
+        <button type="submit" class="save-edit-btn">Save Changes</button>
         <button type="button" class="cancel-edit-btn" data-id="${todo.id}">Cancel</button>
       </div>
     </form>
@@ -584,14 +584,14 @@ export function updateLiveAiPreview(text) {
 
   const prediction = predictTask(text.trim());
 
-  catBadge.textContent = `🏷️ ${prediction.category}`;
+  catBadge.textContent = prediction.category;
   catBadge.className = `badge category-${prediction.category.toLowerCase()}`;
 
-  prioBadge.textContent = `⚡ ${prediction.priority}`;
+  prioBadge.textContent = prediction.priority;
   prioBadge.className = `badge priority-${prediction.priority.toLowerCase()}`;
 
-  confText.textContent = `${prediction.categoryConfidence}% confident`;
-  previewContainer.style.display = "block";
+  confText.textContent = `${prediction.categoryConfidence}% match`;
+  previewContainer.style.display = "flex";
 }
 
 /**

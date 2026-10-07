@@ -59,12 +59,12 @@
       <!-- Header -->
       <div class="header">
         <div>
-          <h1>My To-Do List</h1>
-          <p class="subtitle">Powered by On-Device ML Categorization</p>
+          <h1>Task Manager</h1>
+          <p class="subtitle">Organize and manage your daily workflow</p>
         </div>
         <div class="user-info">
           <span id="welcome-user"></span>
-          <button id="logout-btn" class="logout-btn">Logout</button>
+          <button id="logout-btn" class="logout-btn">Log out</button>
         </div>
       </div>
 
@@ -74,7 +74,7 @@
           <input
             type="text"
             id="todo-input"
-            placeholder="What needs to be done?..."
+            placeholder="Add a new task..."
             autocomplete="off"
             required
           />
@@ -91,7 +91,7 @@
         <!-- Live Real-Time ML Categorization Preview -->
         <div id="ai-live-preview" class="ai-live-preview" style="display: none">
           <span class="ai-pill-tag">
-            <span class="ai-sparkle">🤖 AI Model:</span>
+            <span class="ai-sparkle">Suggested:</span>
             <span id="preview-category-badge" class="badge"></span>
             <span id="preview-priority-badge" class="badge"></span>
             <span id="preview-confidence" class="confidence-text"></span>
